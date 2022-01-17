@@ -1,5 +1,8 @@
 import pygame
+
 import random
+
+
 
 from pygame.locals import (
     RLEACCEL,
@@ -38,6 +41,8 @@ class Stone(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
+        self.movey = 0
+        self.falling = False
         self.surf = pygame.image.load("python.png").convert()
         self.surf = pygame.transform.scale(self.surf, (70,70))
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
@@ -45,6 +50,9 @@ class Player(pygame.sprite.Sprite):
         self.rect.left = SCREEN_WIDTH/2-(self.rect.right-self.rect.left)/2
         self.rect.bottom = SCREEN_HEIGHT
     def update(self, pressed_keys):
+        if self.movey < 0:
+            self.falling = True
+        self.rect.y = self.rect.y + self.movey
         if pressed_keys[K_LEFT]:
             self.rect.move_ip(-10, 0)
         if pressed_keys[K_RIGHT]:
@@ -53,6 +61,13 @@ class Player(pygame.sprite.Sprite):
             self.rect.left = 0
         if self.rect.right > SCREEN_WIDTH:
             self.rect.right = SCREEN_WIDTH
+    def gravity(self):
+        self.movey += 0.3
+        if self.rect.y > SCREEN_HEIGHT:
+            self.movey = 0
+            self.rect.y = SCREEN_HEIGHT-ty-ty
+    def jump(self):
+        self.movey = -15
 
 
 
@@ -63,16 +78,16 @@ pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 ADDSTONE = pygame.USEREVENT + 1
-pygame.time.set_timer(ADDSTONE, 500)
-
+pygame.time.set_timer(ADDSTONE, 1000)
 player = Player()
-
+player.jump()
+ty = 200
+SCORE = 0
 stones = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 all_sprites.add(player)
 
 running = True
-
 
 while running:
     for event in pygame.event.get():
@@ -86,18 +101,17 @@ while running:
             new_stone = Stone()
             stones.add(new_stone)
             all_sprites.add(new_stone)
-
     pressed_keys = pygame.key.get_pressed()
-
     clock = pygame.time.Clock()
 
-
+    player.gravity()
     player.update(pressed_keys)
 
     screen.fill((0, 0, 0))
 
-    if pygame.sprite.spritecollideany(player, stones):
-        player.kill()
+    if pygame.sprite.spritecollideany(player, stones) and player.falling == True:
+        player.jump()
+        SCORE += 1
 
 
     for entity in all_sprites:
